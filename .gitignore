@@ -1,0 +1,8 @@
+airflow/.env
+airflow/logs/
+airflow/dags/__pycache__/
+__pycache__/
+*.pyc
+tmp_pipeline/
+venv/
+.pytest_cache/
