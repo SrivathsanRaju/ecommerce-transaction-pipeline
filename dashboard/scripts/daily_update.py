@@ -38,8 +38,7 @@ REPO_ROOT = DASHBOARD_DIR.parent                                 # .../de-transa
 DAGS_DIR = REPO_ROOT / "airflow" / "dags"
 DATA_JSON = DASHBOARD_DIR / "data.json"
 LOG_FILE = DASHBOARD_DIR / "scripts" / "daily_update.log"
-EXPORT_CMD = ["python3", str(DASHBOARD_DIR / "export_data.py")]
-
+EXPORT_CMD = [sys.executable, str(DASHBOARD_DIR / "export_data.py")]
 POLL_SECONDS = 60
 TIMEOUT_MINUTES = 45  # how long to wait for today's DAG run before giving up
 
@@ -47,7 +46,7 @@ TIMEOUT_MINUTES = 45  # how long to wait for today's DAG run before giving up
 def log(msg: str):
     line = f"[{datetime.now().isoformat(timespec='seconds')}] {msg}"
     print(line)
-    with open(LOG_FILE, "a") as f:
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(line + "\n")
 
 
