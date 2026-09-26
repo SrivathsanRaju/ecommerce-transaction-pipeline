@@ -1,0 +1,177 @@
+{
+  "generated_at": "2026-09-26T17:50:21.989296",
+  "generated_date": "2026-09-26",
+  "pipeline_health": [
+    {
+      "run_timestamp": "2026-09-26T11:59:58.210895",
+      "stage": "bronze_to_silver",
+      "raw_row_count": 505,
+      "clean_row_count": 482,
+      "rows_dropped": 23,
+      "null_amount_count": 10,
+      "null_location_count": 10,
+      "bad_payment_method_count": 9,
+      "duplicate_count": 5,
+      "null_rate_pct": 3.96,
+      "duplicate_rate_pct": 0.99
+    }
+  ],
+  "transaction_summary": [
+    {
+      "run_timestamp": "2026-09-26T12:00:05.440627",
+      "total_transactions": 482,
+      "flagged_transactions": 11,
+      "flagged_rate_pct": 2.28,
+      "amount_outlier_count": 11,
+      "high_velocity_count": 0,
+      "total_transaction_value": 2522747.63,
+      "average_transaction_value": 5233.92,
+      "note": "Fraud-signal rules are illustrative, threshold-based heuristics on synthetic data \u2014 not validated against real fraud labels."
+    }
+  ],
+  "recent_flagged": [
+    {
+      "transaction_id": "6e1b1900-dc5d-45b3-8a48-79ebf5031d24",
+      "user_id": "user_0050",
+      "amount": 97851.93,
+      "currency": "INR",
+      "location": "Chennai",
+      "merchant_category": "food_delivery",
+      "payment_method": "credit_card",
+      "timestamp": "2026-09-26T10:24:22.384906",
+      "amount_zscore": 4.8395011974023205,
+      "flag_amount_outlier": true,
+      "flag_high_velocity": false
+    },
+    {
+      "transaction_id": "53014080-49f5-4a37-9cc9-26b1c5debb70",
+      "user_id": "user_0014",
+      "amount": 64346.73,
+      "currency": "INR",
+      "location": "Hyderabad",
+      "merchant_category": "groceries",
+      "payment_method": "wallet",
+      "timestamp": "2026-09-26T09:29:22.385636",
+      "amount_zscore": 3.0887785361735407,
+      "flag_amount_outlier": true,
+      "flag_high_velocity": false
+    },
+    {
+      "transaction_id": "abb9ba34-2e0e-4e1f-9e53-94ac41c1efa9",
+      "user_id": "user_0006",
+      "amount": 166472.83,
+      "currency": "INR",
+      "location": "Delhi",
+      "merchant_category": "food_delivery",
+      "payment_method": "debit_card",
+      "timestamp": "2026-09-26T07:55:22.384557",
+      "amount_zscore": 8.42509879610085,
+      "flag_amount_outlier": true,
+      "flag_high_velocity": false
+    },
+    {
+      "transaction_id": "e5ac3f4d-571f-4757-ab44-61855d02d0ef",
+      "user_id": "user_0027",
+      "amount": 165752.12,
+      "currency": "INR",
+      "location": "Mumbai",
+      "merchant_category": "travel",
+      "payment_method": "upi",
+      "timestamp": "2026-09-26T05:41:22.384539",
+      "amount_zscore": 8.387440064645011,
+      "flag_amount_outlier": true,
+      "flag_high_velocity": false
+    },
+    {
+      "transaction_id": "fdf3e236-6f6c-4248-8a33-848fa7214fe5",
+      "user_id": "user_0059",
+      "amount": 135352.21,
+      "currency": "INR",
+      "location": "Hyderabad",
+      "merchant_category": "electronics",
+      "payment_method": "wallet",
+      "timestamp": "2026-09-26T04:22:22.387791",
+      "amount_zscore": 6.798975846066539,
+      "flag_amount_outlier": true,
+      "flag_high_velocity": false
+    },
+    {
+      "transaction_id": "ccc4ba19-c626-443e-8fea-ed29ba78c156",
+      "user_id": "user_0077",
+      "amount": 131096.18,
+      "currency": "INR",
+      "location": "Delhi",
+      "merchant_category": "fashion",
+      "payment_method": "wallet",
+      "timestamp": "2026-09-25T21:46:22.385817",
+      "amount_zscore": 6.576588629518973,
+      "flag_amount_outlier": true,
+      "flag_high_velocity": false
+    },
+    {
+      "transaction_id": "f10c3e7d-84c9-4b72-b590-82c900589658",
+      "user_id": "user_0080",
+      "amount": 87799.18,
+      "currency": "INR",
+      "location": "Mumbai",
+      "merchant_category": "utilities",
+      "payment_method": "upi",
+      "timestamp": "2026-09-25T21:42:22.383929",
+      "amount_zscore": 4.314222218835781,
+      "flag_amount_outlier": true,
+      "flag_high_velocity": false
+    },
+    {
+      "transaction_id": "ad97bb1b-4bbf-4c8b-9286-2c79cd0329a2",
+      "user_id": "user_0082",
+      "amount": 137209.87,
+      "currency": "INR",
+      "location": "Pune",
+      "merchant_category": "groceries",
+      "payment_method": "net_banking",
+      "timestamp": "2026-09-25T21:06:22.385526",
+      "amount_zscore": 6.896042792655673,
+      "flag_amount_outlier": true,
+      "flag_high_velocity": false
+    },
+    {
+      "transaction_id": "a11e82ab-7b15-4e81-8514-f532109fab6e",
+      "user_id": "user_0086",
+      "amount": 108476.96,
+      "currency": "INR",
+      "location": "Hyderabad",
+      "merchant_category": "fashion",
+      "payment_method": "debit_card",
+      "timestamp": "2026-09-25T19:53:22.384278",
+      "amount_zscore": 5.394683103412003,
+      "flag_amount_outlier": true,
+      "flag_high_velocity": false
+    },
+    {
+      "transaction_id": "d62332cb-1786-43d0-859c-82a486c12981",
+      "user_id": "user_0050",
+      "amount": 188840.13,
+      "currency": "INR",
+      "location": "Delhi",
+      "merchant_category": "food_delivery",
+      "payment_method": "net_banking",
+      "timestamp": "2026-09-25T18:33:22.387480",
+      "amount_zscore": 9.593840931068033,
+      "flag_amount_outlier": true,
+      "flag_high_velocity": false
+    },
+    {
+      "transaction_id": "bcfecec5-2f23-4db0-8efa-2b1f3e82395c",
+      "user_id": "user_0097",
+      "amount": 85094.09,
+      "currency": "INR",
+      "location": "Hyderabad",
+      "merchant_category": "electronics",
+      "payment_method": "debit_card",
+      "timestamp": "2026-09-25T13:43:22.386792",
+      "amount_zscore": 4.172875133497882,
+      "flag_amount_outlier": true,
+      "flag_high_velocity": false
+    }
+  ]
+}

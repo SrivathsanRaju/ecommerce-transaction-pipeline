@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pipeline Health</title>
+<script src="vendor/chart.umd.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-dot"></span>
+        <span class="brand-name">transaction<span class="accent">pipeline</span></span>
+      </div>
+      <nav class="tabs">
+        <button class="tab active" data-view="health">Pipeline Health</button>
+        <button class="tab" data-view="business">Business Metrics</button>
+      </nav>
+      <div class="meta">
+        <span id="lastUpdated">—</span>
+        <span class="status-pill" id="overallStatus">checking…</span>
+      </div>
+    </header>
+
+    <main>
+      <!-- ===================== HEALTH VIEW ===================== -->
+      <section id="view-health" class="view active">
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-label">Rows ingested (latest run)</div>
+            <div class="kpi-value" id="kpiRows">—</div>
+            <div class="kpi-sub" id="kpiRowsSub">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Rows dropped (latest run)</div>
+            <div class="kpi-value" id="kpiDropped">—</div>
+            <div class="kpi-sub" id="kpiDroppedSub">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Null rate (latest run)</div>
+            <div class="kpi-value" id="kpiNull">—</div>
+            <div class="kpi-sub" id="kpiNullSub">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Duplicate rate (latest run)</div>
+            <div class="kpi-value" id="kpiDup">—</div>
+            <div class="kpi-sub" id="kpiDupSub">—</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Row counts</h3>
+              <span class="panel-sub">raw vs. clean, last 30 runs</span>
+            </div>
+            <canvas id="chartRowCounts" height="240"></canvas>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Data quality drift</h3>
+              <span class="panel-sub">null vs. duplicate rate</span>
+            </div>
+            <canvas id="chartQuality" height="240"></canvas>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>What got dropped (latest run)</h3>
+            <span class="panel-sub" id="dropBreakdownSub"></span>
+          </div>
+          <canvas id="chartDropBreakdown" height="140"></canvas>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Recent runs</h3>
+            <span class="panel-sub" id="recentRunsSub"></span>
+          </div>
+          <div class="table-wrap">
+            <table id="runsTable">
+              <thead>
+                <tr><th>Run</th><th>Raw rows</th><th>Clean rows</th><th>Dropped</th><th>Null rate</th><th>Dup rate</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== BUSINESS VIEW ===================== -->
+      <section id="view-business" class="view">
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-label">Transactions (latest day)</div>
+            <div class="kpi-value" id="bizCount">—</div>
+            <div class="kpi-sub" id="bizCountSub">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Volume (latest day)</div>
+            <div class="kpi-value" id="bizVolume">—</div>
+            <div class="kpi-sub" id="bizVolumeSub">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Avg transaction value</div>
+            <div class="kpi-value" id="bizAvg">—</div>
+            <div class="kpi-sub">latest day</div>
+          </div>
+          <div class="kpi-card warn">
+            <div class="kpi-label">Flagged rate (latest run)</div>
+            <div class="kpi-value" id="bizFlagRate">—</div>
+            <div class="kpi-sub" id="bizFlagSub">—</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Transaction volume</h3>
+              <span class="panel-sub">last 30 runs</span>
+            </div>
+            <canvas id="chartVolume" height="240"></canvas>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Flagged rate</h3>
+              <span class="panel-sub">last 30 runs</span>
+            </div>
+            <canvas id="chartFlagged" height="240"></canvas>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Flag reasons (latest run)</h3>
+            <span class="panel-sub" id="flagReasonDate"></span>
+          </div>
+          <canvas id="chartReasons" height="120"></canvas>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Recently flagged transactions</h3>
+            <span class="panel-sub" id="flaggedTableSub"></span>
+          </div>
+          <div class="table-wrap">
+            <table id="flaggedTable">
+              <thead>
+                <tr><th>Time</th><th>Txn ID</th><th>Amount</th><th>Location</th><th>Merchant</th><th>Payment</th><th>Reason</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>Data snapshot: <code id="footerDate">—</code></span>
+      <span class="divider">·</span>
+      <span>Reads <code>data.json</code>, exported after each pipeline run</span>
+    </footer>
+  </div>
+
+<script src="script.js"></script>
+</body>
+</html>
