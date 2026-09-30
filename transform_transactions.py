@@ -4,10 +4,16 @@ import boto3
 import json
 import os
 import shutil
+import argparse
 from datetime import date, datetime
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--run-date", type=str, default=None, help="Date in YYYY-MM-DD format")
+args = parser.parse_args()
+
 BUCKET_NAME = "sriv-de"
-today = date(2026, 9, 22)
+today = datetime.strptime(args.run_date, "%Y-%m-%d").date() if args.run_date else date.today()
+
 s3_bronze_key = f"bronze/year={today.year}/month={today.month:02d}/day={today.day:02d}/transactions.json"
 s3_silver_prefix = f"silver/year={today.year}/month={today.month:02d}/day={today.day:02d}/"
 s3_health_prefix = f"gold/pipeline_health/year={today.year}/month={today.month:02d}/day={today.day:02d}/"
@@ -24,7 +30,7 @@ s3 = boto3.client("s3")
 s3.download_file(BUCKET_NAME, s3_bronze_key, LOCAL_BRONZE)
 print(f"Downloaded bronze file to {LOCAL_BRONZE}")
 
-# ---- Step 2: Spark reads LOCAL file only, no S3 involved for Spark itself ----
+# ---- Step 2: Spark reads LOCAL file only ----
 spark = SparkSession.builder.appName("TransactionTransform").getOrCreate()
 spark.sparkContext.setLogLevel("WARN")
 
@@ -68,8 +74,8 @@ health_record = {
     "null_location_count": null_location_count,
     "bad_payment_method_count": bad_payment_count,
     "duplicate_count": dup_count,
-    "null_rate_pct": round((null_amount_count + null_location_count) / raw_count * 100, 2),
-    "duplicate_rate_pct": round(dup_count / raw_count * 100, 2),
+    "null_rate_pct": round((null_amount_count + null_location_count) / raw_count * 100, 2) if raw_count else 0,
+    "duplicate_rate_pct": round(dup_count / raw_count * 100, 2) if raw_count else 0,
 }
 print("Pipeline health summary:")
 print(json.dumps(health_record, indent=2))
@@ -79,18 +85,13 @@ with open(LOCAL_HEALTH_FILE, "w") as f:
 
 spark.stop()
 
-# ---- Step 7: Upload everything back to S3 via boto3 ----
-# Upload every Parquet part-file to silver/
-for filename in os.listdir(LOCAL_SILVER_DIR):
-    if filename.endswith(".parquet"):
-        local_path = os.path.join(LOCAL_SILVER_DIR, filename)
-        s3_key = s3_silver_prefix + filename
-        s3.upload_file(local_path, BUCKET_NAME, s3_key)
-        print(f"Uploaded {filename} to s3://{BUCKET_NAME}/{s3_key}")
-
-# Upload the single Parquet file to silver/
+# ---- Step 7: Upload everything back to S3 ----
 s3_key = s3_silver_prefix + "transactions.parquet"
 s3.upload_file(silver_file, BUCKET_NAME, s3_key)
 print(f"Uploaded transactions.parquet to s3://{BUCKET_NAME}/{s3_key}")
+
+health_s3_key = s3_health_prefix + "health.json"
+s3.upload_file(LOCAL_HEALTH_FILE, BUCKET_NAME, health_s3_key)
+print(f"Uploaded health record to s3://{BUCKET_NAME}/{health_s3_key}")
 
 print("Done.")

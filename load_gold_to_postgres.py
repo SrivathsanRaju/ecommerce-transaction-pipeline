@@ -14,11 +14,10 @@ args = parser.parse_args()
 BUCKET_NAME = "sriv-de"
 today = datetime.strptime(args.run_date, "%Y-%m-%d").date() if args.run_date else date.today()
 
-# Prefer DATABASE_URL from the environment (set in GitHub Actions to point at
-# the cloud Postgres). Falls back to the original local Docker settings so
-# this still runs unchanged from Airflow on the laptop.
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL:
+    if DATABASE_URL.startswith("postgresql://"):
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
     engine = create_engine(DATABASE_URL)
 else:
     DB_USER = "pipeline_user"
