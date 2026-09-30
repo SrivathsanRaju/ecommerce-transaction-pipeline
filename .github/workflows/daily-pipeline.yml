@@ -1,0 +1,68 @@
+name: Daily pipeline + dashboard update
+
+on:
+  schedule:
+    # 18:30 UTC = 00:00 IST
+    - cron: "30 18 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ap-south-1
+      DATABASE_URL: ${{ secrets.CLOUD_DATABASE_URL }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Java (required by PySpark)
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Install dependencies
+        run: |
+          pip install boto3 pandas pyarrow sqlalchemy psycopg2-binary pyspark
+
+      # ---- the pipeline itself, same order as the Airflow DAG ----
+      - name: Ingestion
+        run: python generate_transactions.py
+
+      - name: Transform (bronze -> silver)
+        run: python transform_transactions.py
+
+      - name: Fraud-signal flagging (silver -> gold)
+        run: python fraud_signal_flagging.py
+
+      - name: Load gold layer to Postgres
+        run: python load_gold_to_postgres.py
+
+      # ---- refresh the dashboard's data snapshot ----
+      - name: Export dashboard data
+        working-directory: dashboard
+        run: python export_data.py
+
+      - name: Commit and push if data changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add dashboard/data.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Daily data update — $(date -u +%Y-%m-%d)"
+            git push
+          fi
