@@ -68,6 +68,14 @@ function renderHealth(rows) {
   document.getElementById('kpiNull').textContent = fmtPctVal(latest.null_rate_pct);
   document.getElementById('kpiDup').textContent = fmtPctVal(latest.duplicate_rate_pct);
 
+  // cumulative total across tracked history (sums every run currently in data.json —
+  // export_data.py keeps a rolling 30-day window, so this resets past that, not a true lifetime count)
+  const totalRaw = rows.reduce((sum, r) => sum + r.raw_row_count, 0);
+  const totalClean = rows.reduce((sum, r) => sum + r.clean_row_count, 0);
+  document.getElementById('kpiTotal').textContent = fmtInt(totalRaw);
+  document.getElementById('kpiTotalSub').textContent =
+    fmtInt(totalClean) + ' clean · ' + rows.length + ' run' + (rows.length === 1 ? '' : 's') + ' tracked';
+
   if (prev) {
     const dNull = latest.null_rate_pct - prev.null_rate_pct;
     document.getElementById('kpiNullSub').textContent = (dNull >= 0 ? '+' : '') + dNull.toFixed(2) + 'pp vs prior run';
