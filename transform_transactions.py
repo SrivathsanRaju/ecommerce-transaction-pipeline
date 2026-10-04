@@ -65,7 +65,7 @@ print(f"Wrote clean Parquet locally to {silver_file}")
 
 # ---- Step 6: Build health record ----
 health_record = {
-    "run_timestamp": datetime.now().isoformat(),
+    "run_timestamp": datetime.now(timezone.utc).isoformat(),
     "stage": "bronze_to_silver",
     "raw_row_count": raw_count,
     "clean_row_count": clean_count,

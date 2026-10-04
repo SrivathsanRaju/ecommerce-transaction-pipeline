@@ -15,8 +15,7 @@ it sees the .pipeline_done_<date> marker). Set DATABASE_URL first, e.g.:
 """
 import json
 import os
-from datetime import datetime, timedelta
-
+from datetime import datetime, timedelta, timezone
 import psycopg2
 import psycopg2.extras
 
@@ -95,7 +94,7 @@ def main():
     finally:
         conn.close()
 
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     data = {
         "generated_at": now.isoformat(),
         "generated_date": now.date().isoformat(),  # daily_update.py checks this

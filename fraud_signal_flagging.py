@@ -54,7 +54,7 @@ print(f"Uploaded flagged transactions to s3://{BUCKET_NAME}/{s3_gold_flagged_pre
 
 # ---- Step 6: Build and write summary ----
 summary = {
-    "run_timestamp": datetime.now().isoformat(),
+    "run_timestamp": datetime.now(timezone.utc).isoformat(),
     "total_transactions": len(df),
     "flagged_transactions": len(flagged_df),
     "flagged_rate_pct": round(len(flagged_df) / len(df) * 100, 2),
