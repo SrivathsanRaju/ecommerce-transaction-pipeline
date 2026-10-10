@@ -5,7 +5,7 @@ import json
 import os
 import shutil
 import argparse
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--run-date", type=str, default=None, help="Date in YYYY-MM-DD format")
