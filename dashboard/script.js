@@ -15,6 +15,20 @@ const COLORS = {
   text: '#838d9c',
 };
 
+const RULE_LABELS = {
+  flag_amount_outlier: 'amount outlier',
+  flag_high_velocity: 'burst (velocity)',
+  flag_fan_in: 'P2P fan-in',
+  flag_pass_through: 'P2P pass-through',
+};
+const TYPE_LABELS = {
+  mule_chain: 'mule chain',
+  probe_then_drain: 'probe then drain',
+  collect_request_scam: 'collect-request scam',
+  large_value: 'large value',
+};
+const prettyType = t => TYPE_LABELS[t] || t.replace(/_/g, ' ');
+
 Chart.defaults.font.family = "ui-monospace, monospace";
 Chart.defaults.font.size = 11;
 Chart.defaults.color = COLORS.text;
@@ -33,6 +47,7 @@ fetch('data.json')
 
 function render(data) {
   const { pipeline_health, transaction_summary, recent_flagged, generated_at } = data;
+  const detection_eval = data.detection_eval || [];
 
   document.getElementById('lastUpdated').textContent = 'snapshot: ' + fmtRunFull(generated_at);
   document.getElementById('footerDate').textContent = generated_at;
@@ -48,7 +63,8 @@ function render(data) {
   });
 
   renderHealth(pipeline_health);
-  renderBusiness(transaction_summary, recent_flagged || []);
+  renderBusiness(transaction_summary, recent_flagged || [], detection_eval);
+  renderDetection(detection_eval);
 }
 
 // ===================== HEALTH VIEW =====================
@@ -155,7 +171,7 @@ function renderHealth(rows) {
 }
 
 // ===================== BUSINESS VIEW =====================
-function renderBusiness(txn, flagged) {
+function renderBusiness(txn, flagged, evals) {
   txn = [...txn].sort((a, b) => a.run_timestamp.localeCompare(b.run_timestamp));
   const latest = txn[txn.length - 1];
   const prev = txn[txn.length - 8] || txn[0];
@@ -201,13 +217,22 @@ function renderBusiness(txn, flagged) {
   });
 
   document.getElementById('flagReasonDate').textContent = fmtRunFull(latest.run_timestamp);
+  // per-rule counts come from the detection evaluation of the latest run (covers all 4 rules);
+  // if that is not available yet, fall back to the two counts stored in transaction_summary
+  const latestEval = (evals || [])[(evals || []).length - 1];
+  let reasonLabels = ['amount outlier', 'high velocity'];
+  let reasonValues = [latest.amount_outlier_count, latest.high_velocity_count];
+  if (latestEval && latestEval.by_rule && Object.keys(latestEval.by_rule).length) {
+    reasonLabels = Object.keys(latestEval.by_rule).map(k => RULE_LABELS[k] || k);
+    reasonValues = Object.values(latestEval.by_rule).map(v => v.flagged);
+  }
   new Chart(document.getElementById('chartReasons'), {
     type: 'bar',
     data: {
-      labels: ['amount outlier', 'high velocity'],
+      labels: reasonLabels,
       datasets: [{
-        data: [latest.amount_outlier_count, latest.high_velocity_count],
-        backgroundColor: [COLORS.accent, COLORS.accent2],
+        data: reasonValues,
+        backgroundColor: [COLORS.accent, COLORS.accent2, '#c792ea', COLORS.warn],
         borderRadius: 4,
         maxBarThickness: 44,
       }]
@@ -217,6 +242,7 @@ function renderBusiness(txn, flagged) {
       plugins: { legend: { display: false } },
       scales: { x: { grid: baseGrid(), ticks: { precision: 0 } }, y: { grid: { display: false } } },
       responsive: true,
+      maintainAspectRatio: false,
     }
   });
 
@@ -226,13 +252,15 @@ function renderBusiness(txn, flagged) {
   flagged.slice(0, 25).forEach(f => {
     const reasons = [];
     if (f.flag_amount_outlier) reasons.push('amount outlier');
-    if (f.flag_high_velocity) reasons.push('high velocity');
+    if (f.flag_high_velocity) reasons.push('burst');
+    if (f.flag_fan_in) reasons.push('fan-in');
+    if (f.flag_pass_through) reasons.push('pass-through');
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${fmtRunFull(f.timestamp)}</td>
       <td>${f.transaction_id}</td>
       <td>₹${Number(f.amount).toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
-      <td>${f.location}</td>
+      <td>${f.location ?? '—'}</td>
       <td>${f.merchant_category}</td>
       <td>${f.payment_method}</td>
       <td>${reasons.join(', ') || '—'}</td>
@@ -240,6 +268,100 @@ function renderBusiness(txn, flagged) {
     tbody.appendChild(tr);
   });
   document.getElementById('flaggedTableSub').textContent = flagged.length + ' most recent';
+}
+
+// ===================== DETECTION QUALITY =====================
+// How well the fraud rules did against fraud we planted ourselves (so the truth is known).
+function renderDetection(evals) {
+  const section = document.getElementById('detectionSection');
+  const empty = document.getElementById('detectionEmpty');
+  if (!evals.length) { section.style.display = 'none'; empty.style.display = 'block'; return; }
+  section.style.display = 'block'; empty.style.display = 'none';
+
+  evals = [...evals].sort((a, b) => a.run_date.localeCompare(b.run_date));
+  const latest = evals[evals.length - 1];
+  const num = v => (v === null || v === undefined) ? null : Number(v);
+  const pctOrDash = v => num(v) === null ? '—' : num(v).toFixed(1) + '%';
+
+  document.getElementById('detPrecision').textContent = pctOrDash(latest.precision_pct);
+  document.getElementById('detPrecisionSub').textContent =
+    latest.caught + ' of ' + latest.flagged_rows + ' flags were real fraud';
+  document.getElementById('detRecall').textContent = pctOrDash(latest.recall_pct);
+  document.getElementById('detRecallSub').textContent =
+    latest.caught + ' of ' + latest.planted_fraud_rows + ' planted fraud rows caught';
+  document.getElementById('detFP').textContent = fmtInt(latest.false_positives);
+  document.getElementById('detFPSub').textContent = 'legit transactions flagged by mistake';
+
+  const types = latest.by_type || {};
+  const typeNames = Object.keys(types);
+  const scen = typeNames.reduce((a, k) => a + types[k].scenarios, 0);
+  const scenHit = typeNames.reduce((a, k) => a + types[k].scenarios_detected, 0);
+  document.getElementById('detScen').textContent = scenHit + ' / ' + scen;
+  document.getElementById('detScenSub').textContent = 'fraud attacks with at least one row flagged';
+  document.getElementById('detectionSub').textContent = 'run date ' + latest.run_date;
+
+  // catch rate by fraud type (latest run)
+  new Chart(document.getElementById('chartByType'), {
+    type: 'bar',
+    data: {
+      labels: typeNames.map(prettyType),
+      datasets: [{
+        label: 'row recall',
+        data: typeNames.map(k => num(types[k].row_recall_pct) ?? 0),
+        backgroundColor: typeNames.map(k => (num(types[k].row_recall_pct) ?? 0) >= 80 ? COLORS.good : COLORS.warn),
+        borderRadius: 4,
+        maxBarThickness: 36,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => {
+          const t = types[typeNames[c.dataIndex]];
+          return `${t.caught_rows} of ${t.planted_rows} rows (${c.parsed.x.toFixed(1)}%)` +
+                 (t.lost_in_cleaning ? `, ${t.lost_in_cleaning} lost in cleaning` : '');
+        } } },
+      },
+      scales: {
+        x: { min: 0, max: 100, grid: baseGrid(), ticks: { callback: v => v + '%' } },
+        y: { grid: { display: false } },
+      },
+      responsive: true,
+    }
+  });
+
+  // precision & recall over time
+  new Chart(document.getElementById('chartPrecRecall'), {
+    type: 'line',
+    data: {
+      labels: evals.map(e => fmtRunLabel(e.run_date + 'T12:00:00')),
+      datasets: [
+        { label: 'precision', data: evals.map(e => num(e.precision_pct)), borderColor: COLORS.accent, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 3, tension: 0.3 },
+        { label: 'recall', data: evals.map(e => num(e.recall_pct)), borderColor: COLORS.accent2, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 3, tension: 0.3 },
+      ]
+    },
+    options: (() => {
+      const o = lineOpts({ legend: true, isPct: true });
+      o.scales.y.min = 0; o.scales.y.max = 100;
+      o.scales.y.ticks = { callback: v => v + '%' };
+      return o;
+    })()
+  });
+
+  // per-rule precision table (latest run)
+  const tbody = document.querySelector('#ruleTable tbody');
+  tbody.innerHTML = '';
+  Object.entries(latest.by_rule || {}).forEach(([rule, r]) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${RULE_LABELS[rule] || rule}</td>
+      <td>${fmtInt(r.flagged)}</td>
+      <td>${fmtInt(r.true_fraud)}</td>
+      <td>${pctOrDash(r.precision_pct)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
 
 // ===================== chart option builders =====================

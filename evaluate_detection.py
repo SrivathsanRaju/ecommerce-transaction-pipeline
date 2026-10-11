@@ -13,6 +13,7 @@ import boto3
 import pandas as pd
 
 BUCKET_NAME = "sriv-de"
+RULE_COLUMNS = ["flag_amount_outlier", "flag_high_velocity", "flag_fan_in", "flag_pass_through"]
 
 
 def pct(part, whole):
@@ -34,7 +35,18 @@ def evaluate(silver_df, flagged_df, labels_df):
         "precision_pct": pct(len(caught_ids), len(flagged_ids)),   # of flags, how many were real
         "recall_pct": pct(len(caught_ids), len(fraud_ids)),        # of real fraud, how much was flagged
         "by_type": {},
+        "by_rule": {},
     }
+
+    # per rule: how many rows it flagged, and how many of those were really planted fraud
+    for rule in RULE_COLUMNS:
+        if rule in flagged_df.columns:
+            rule_ids = set(flagged_df.loc[flagged_df[rule].astype(bool), "transaction_id"])
+            result["by_rule"][rule] = {
+                "flagged": len(rule_ids),
+                "true_fraud": len(rule_ids & fraud_ids),
+                "precision_pct": pct(len(rule_ids & fraud_ids), len(rule_ids)),
+            }
 
     for fraud_type, group in labels_df.groupby("fraud_type"):
         ids = set(group["transaction_id"])
@@ -59,6 +71,9 @@ def print_report(run_date, r):
     for name, t in r["by_type"].items():
         print(f"  {name:<22}{t['planted_rows']:>6}{t['caught_rows']:>8}"
               f"{str(t['row_recall_pct']):>9}{t['scenarios_detected']:>10}/{t['scenarios']}")
+    print(f"  {'rule':<22}{'flagged':>8}{'real fraud':>12}{'precision%':>12}")
+    for name, t in r["by_rule"].items():
+        print(f"  {name:<22}{t['flagged']:>8}{t['true_fraud']:>12}{str(t['precision_pct']):>12}")
 
 
 def s3_key(prefix, run_date, filename):

@@ -83,6 +83,8 @@ main{ padding-top: 26px; }
 .kpi-value{ font-family: var(--mono); font-size: 26px; font-weight:600; letter-spacing: -0.5px; }
 .kpi-sub{ font-size:11px; color: var(--text-faint); margin-top:6px; font-family: var(--mono); }
 
+.kpi-row.five{ grid-template-columns: repeat(5, 1fr); }
+
 /* ---------- panels ---------- */
 .grid-2{ display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:16px; }
 .panel{
@@ -132,7 +134,7 @@ footer code{ font-family: var(--mono); color: var(--text-dim); }
 .divider{ color: var(--text-faint); }
 
 @media (max-width: 860px){
-  .kpi-row{ grid-template-columns: repeat(2,1fr); }
+  .kpi-row, .kpi-row.five{ grid-template-columns: repeat(2,1fr); }
   .grid-2{ grid-template-columns: 1fr; }
   .status-row-label{ width: 110px; font-size:10px; }
 }

@@ -1,5 +1,6 @@
 import boto3
 import pandas as pd
+from botocore.exceptions import ClientError
 from sqlalchemy import create_engine, inspect, text
 import argparse
 import os
@@ -43,6 +44,21 @@ def load_json_from_s3(key: str) -> pd.DataFrame:
     return pd.DataFrame([data])
 
 
+def load_eval_from_s3(key: str):
+    """Detection-quality results. Optional: returns None if this date has none."""
+    try:
+        obj = s3.get_object(Bucket=BUCKET_NAME, Key=key)
+    except ClientError as e:
+        if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
+            return None
+        raise
+    data = json.loads(obj["Body"].read())
+    # nested results are stored as JSON text; the dashboard export parses them back
+    data["by_type"] = json.dumps(data.get("by_type", {}))
+    data["by_rule"] = json.dumps(data.get("by_rule", {}))
+    return pd.DataFrame([data])
+
+
 def ensure_run_date_column(conn, table: str):
     """History tables get a run_date column (one-time upgrade; safe to run every time)."""
     if not inspect(conn).has_table(table):
@@ -72,11 +88,13 @@ def replace_day(conn, table: str, df: pd.DataFrame):
 flagged_key = f"gold/flagged_transactions/year={today.year}/month={today.month:02d}/day={today.day:02d}/flagged_transactions.parquet"
 summary_key = f"gold/transaction_summary/year={today.year}/month={today.month:02d}/day={today.day:02d}/summary.json"
 health_key = f"gold/pipeline_health/year={today.year}/month={today.month:02d}/day={today.day:02d}/health.json"
+eval_key = f"gold/detection_eval/year={today.year}/month={today.month:02d}/day={today.day:02d}/eval.json"
 
 # Read everything from S3 first, so a missing file fails before we touch the database
 flagged_df = load_parquet_from_s3(flagged_key)
 summary_df = load_json_from_s3(summary_key)
 health_df = load_json_from_s3(health_key)
+eval_df = load_eval_from_s3(eval_key)      # None if evaluate_detection.py hasn't run for this date
 
 # One transaction: if anything fails, the delete is rolled back too (never half-loaded)
 with engine.begin() as conn:
@@ -91,5 +109,12 @@ with engine.begin() as conn:
         ensure_run_date_column(conn, table)
     replace_day(conn, "transaction_summary", summary_df)
     replace_day(conn, "pipeline_health", health_df)
+
+    # detection_eval: how well the fraud rules did against the planted labels (one row per run date)
+    if eval_df is not None:
+        ensure_run_date_column(conn, "detection_eval")
+        replace_day(conn, "detection_eval", eval_df)
+    else:
+        print(f"No detection_eval found for {today} - skipped")
 
 print("\nAll gold-layer data loaded into Postgres successfully.")

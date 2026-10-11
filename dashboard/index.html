@@ -28,7 +28,7 @@
     <main>
       <!-- ===================== HEALTH VIEW ===================== -->
       <section id="view-health" class="view active">
-        <div class="kpi-row">
+        <div class="kpi-row five">
           <div class="kpi-card">
             <div class="kpi-label">Rows ingested (latest run)</div>
             <div class="kpi-value" id="kpiRows">—</div>
@@ -50,7 +50,7 @@
             <div class="kpi-sub" id="kpiDupSub">—</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Total processed (last 30 days)</div>
+            <div class="kpi-label">Total rows ingested</div>
             <div class="kpi-value" id="kpiTotal">—</div>
             <div class="kpi-sub" id="kpiTotalSub">—</div>
           </div>
@@ -144,7 +144,7 @@
             <h3>Flag reasons (latest run)</h3>
             <span class="panel-sub" id="flagReasonDate"></span>
           </div>
-          <canvas id="chartReasons" height="120"></canvas>
+          <div style="position:relative;height:190px"><canvas id="chartReasons"></canvas></div>
         </div>
 
         <div class="panel">
@@ -159,6 +159,70 @@
               </thead>
               <tbody></tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- ===================== DETECTION QUALITY ===================== -->
+        <div id="detectionEmpty" class="panel" style="display:none">
+          <div class="panel-head"><h3>Detection quality</h3></div>
+          <span class="panel-sub">No evaluation yet - it appears after the next pipeline run.</span>
+        </div>
+        <div id="detectionSection" style="display:none">
+          <div class="panel-head" style="margin-top:28px">
+            <h3>Detection quality</h3>
+            <span class="panel-sub" id="detectionSub"></span>
+          </div>
+          <div class="kpi-row">
+            <div class="kpi-card">
+              <div class="kpi-label">Precision</div>
+              <div class="kpi-value" id="detPrecision">—</div>
+              <div class="kpi-sub" id="detPrecisionSub">—</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Recall</div>
+              <div class="kpi-value" id="detRecall">—</div>
+              <div class="kpi-sub" id="detRecallSub">—</div>
+            </div>
+            <div class="kpi-card warn">
+              <div class="kpi-label">False positives</div>
+              <div class="kpi-value" id="detFP">—</div>
+              <div class="kpi-sub" id="detFPSub">—</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Fraud attacks caught</div>
+              <div class="kpi-value" id="detScen">—</div>
+              <div class="kpi-sub" id="detScenSub">—</div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="panel">
+              <div class="panel-head">
+                <h3>Catch rate by fraud type</h3>
+                <span class="panel-sub">share of planted rows flagged</span>
+              </div>
+              <canvas id="chartByType" height="220"></canvas>
+            </div>
+            <div class="panel">
+              <div class="panel-head">
+                <h3>Precision &amp; recall over time</h3>
+                <span class="panel-sub">one point per run date</span>
+              </div>
+              <canvas id="chartPrecRecall" height="220"></canvas>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Which rules are accurate</h3>
+              <span class="panel-sub">of the rows each rule flagged, how many were real fraud</span>
+            </div>
+            <div class="table-wrap">
+              <table id="ruleTable">
+                <thead><tr><th>Rule</th><th>Flagged</th><th>Real fraud</th><th>Precision</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>
