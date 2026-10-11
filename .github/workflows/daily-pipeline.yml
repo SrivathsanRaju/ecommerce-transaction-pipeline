@@ -47,6 +47,9 @@ jobs:
       - name: Fraud-signal flagging (silver -> gold)
         run: python fraud_signal_flagging.py
 
+      - name: Score detection against planted fraud
+        run: python evaluate_detection.py
+
       - name: Load gold layer to Postgres
         run: python load_gold_to_postgres.py
 
